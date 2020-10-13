@@ -1,6 +1,7 @@
 #ifndef WRALOC_H
 # define WRALOC_H
 
+# include <stddef.h>
 size_t						_WRALOC_NUM_ALLO_;
 size_t						_WRALOC_NUM_FREE_;
 
