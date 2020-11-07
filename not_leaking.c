@@ -27,7 +27,7 @@ void		tab_free(char **tab)
 	size_t	i;
 
 	i = 0;
-	while (tab && tab[i + 1])
+	while (tab && tab[i])
 	{
 		free(tab[i]);
 		tab[i] = NULL;
