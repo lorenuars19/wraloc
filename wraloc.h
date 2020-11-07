@@ -9,6 +9,14 @@ size_t						_WRALOC_NUM_FREE_;
 #  define WRAP 1
 # endif
 
+# ifndef _FULL_TRACE_
+#  define _FULL_TRACE_ 0
+# endif
+
+# ifndef _LEAKS_ONLY_
+#  define _LEAKS_ONLY_ 0
+# endif
+
 # if WRAP == 1
 
 # include <execinfo.h>
@@ -22,18 +30,21 @@ size_t						_WRALOC_NUM_FREE_;
 # define CL_YE "\x1b[43m"
 # define CL_BL "\x1b[44m"
 
-#define BT_BUF_SIZE 100
-#define BUFSIZE 512
+# define BT_BUF_SIZE 100
+# define BUFSIZE 512
 
-typedef unsigned char		t_byte;
+typedef unsigned char		_WRAP_t_byte;
 
 typedef struct				mem_list
 {
 	size_t					id;
 	void					*addr;
 	size_t					size;
-	t_byte					stat;
-	char					*stack_trace;
+	_WRAP_t_byte					stat;
+	char					*alloc_statrace;
+	char					*freed_statrace;
+	char					*alloc_fstatrace;
+	char					*freed_fstatrace;
 	struct mem_list 		*next;
 }							t_mem;
 
@@ -72,9 +83,9 @@ char			*_jointo(char *s1, char *s2, char **tofree)
 		return (NULL);
 	}
 	i = 0;
-	while (sl1 && s1 && *s1 && *s1 != '\n')
+	while (sl1 && s1 && *s1)
 		a[i++] = *s1++;
-	while (sl2 && s2 && *s2 && *s2 != '\n')
+	while (sl2 && s2 && *s2)
 		a[i++] = *s2++;
 	a[i] = '\0';
 	if (tofree != NULL && *tofree != NULL)
@@ -121,13 +132,12 @@ char			*_trim_addr(const char *s, const char *set)
 	new[i] = '\0';
 	return (new);
 }
-char			*_trim(const char *s, const char *set)
+
+char			*_trim(const char *s, const char *set, void *tofree)
 {
 	char		*new;
-	ssize_t		offset;
 	ssize_t		slen;
 	ssize_t		i;
-	ssize_t		j;
 
 	if (!s || !set[0])
 		return (NULL);
@@ -135,33 +145,25 @@ char			*_trim(const char *s, const char *set)
 	i = 0;
 	while (!(_in_charset(s[i], set)))
 		i++;
-
-	j = i;
-	while(!(_in_charset(s[j], ":")))
-		j++;
-	slen = j - i;
-	printf("slen %ld | i %ld | j %ld| j - i %ld\n", slen, i, j, j - i);
+	slen = i;
 	if (slen < 0)
 		return (NULL);
 	if (!(new = (char *)malloc((slen + 1) * sizeof(char))))
 		return (NULL);
 	i = 0;
-	while (i < j - slen)
-	{
-		new[i] = s[i];
-		i++;
-	}
-	offset = j - i;
 	while (i < slen)
 	{
-		new[i] = s[offset + i];
+		if (s[i] != '\n')
+			new[i] = s[i];
 		i++;
 	}
 	new[i] = '\0';
+	if (tofree)
+		free(tofree);
 	return (new);
 }
 
-int				_parse_output(char *cmd, char **new)
+int				_parse_output(char *cmd, char **new, int full)
 {
 	char		buf[BUFSIZE];
 	FILE		*fp;
@@ -173,18 +175,29 @@ int				_parse_output(char *cmd, char **new)
 	}
 	while (fgets(buf, BUFSIZE, fp) != NULL)
 	{
-		trimmed = _trim(buf, " ");
 		if (_hasto(buf, '?'))
 		{
 			return (2);
 		}
-		if (!(*new = _jointo(*new, trimmed, new)))
+		if (!full)
 		{
-			free(trimmed);
-			return (1);
-		}
+			trimmed = _trim(buf, " ", trimmed);
+			if (!(*new = _jointo(*new, trimmed, new)))
+			{
+				free(trimmed);
+				trimmed = NULL;
+				return (1);
+			}
 		free(trimmed);
-
+		trimmed = NULL;
+		}
+		else
+		{
+			if (!(*new = _jointo(*new, buf, new)))
+			{
+				return (1);
+			}
+		}
 	}
 	if(pclose(fp))
 	{
@@ -193,7 +206,7 @@ int				_parse_output(char *cmd, char **new)
 	return 0;
 }
 
-char			*_get_stack_trace(void)
+char			*_get_stack_trace(int full)
 {
 	int			nptrs = 0;
 	int			ret = 0;
@@ -210,23 +223,37 @@ char			*_get_stack_trace(void)
 		free(strings);
 		return (NULL);
 	}
-	for (int j = 4; j < nptrs; j++)
+	for (int j = 1; j < nptrs; j++)
 	{
 		tmp = _trim_addr(strings[j], " ");
-		if (!(cmd = _jointo("/usr/bin/addr2line -p -s -f -e ", tmp, &cmd)))
+		if (!(cmd = _jointo("/usr/bin/addr2line -p -f -e ", tmp, &cmd)))
 		{
 			return (NULL);
 		}
-		if ((ret = _parse_output(cmd, &stack_trace)))
+		if (!(cmd = _jointo(cmd, " 2>&1 ", &cmd)))
+		{
+			return (NULL);
+		}
+		if ((ret = _parse_output(cmd, &stack_trace, full)))
 		{
 			if (ret != 2)
 				return (NULL);
 		}
-		if (ret != 2)
+		if (ret == 0)
 		{
-			if (!(stack_trace = _jointo(stack_trace, ((j > nptrs - 4) ? ("") : (" < ")), &stack_trace)))
+			if (!full)
 			{
-				return (NULL);
+				if (!(stack_trace = _jointo(stack_trace, ((j > nptrs - 4) ? ("") : (" < ")), &stack_trace)))
+				{
+					return (NULL);
+				}
+			}
+			else
+			{
+				if (!(stack_trace = _jointo(stack_trace, "\t", &stack_trace)))
+				{
+					return (NULL);
+				}
 			}
 		}
 		free(tmp);
@@ -238,7 +265,7 @@ char			*_get_stack_trace(void)
 	return (stack_trace);
 }
 
-static t_mem 				*_mem_new(void *addr, size_t size, t_byte stat)
+static t_mem 				*_mem_new(void *addr, size_t size, _WRAP_t_byte stat)
 {
 	static size_t 			id = 'A';
 	t_mem 					*head;
@@ -249,7 +276,10 @@ static t_mem 				*_mem_new(void *addr, size_t size, t_byte stat)
 	head->addr = addr;
 	head->size = size;
 	head->stat = stat;
-	head->stack_trace = _get_stack_trace();
+	head->alloc_statrace = NULL;
+	head->freed_statrace = NULL;
+	head->alloc_fstatrace = NULL;
+	head->freed_fstatrace = NULL;
 	head->next = NULL;
 	return (head);
 }
@@ -279,11 +309,25 @@ static t_mem				*_mem_append(t_mem **head, t_mem *new)
 
 static void					_mem_del(t_mem *mem)
 {
-
-	if (mem->stack_trace)
+	if (mem->alloc_statrace)
 	{
-		free(mem->stack_trace);
-		mem->stack_trace = NULL;
+		free(mem->alloc_statrace);
+		mem->alloc_statrace = NULL;
+	}
+	if (mem->freed_statrace)
+	{
+		free(mem->freed_statrace);
+		mem->freed_statrace = NULL;
+	}
+	if (mem->alloc_fstatrace)
+	{
+		free(mem->alloc_fstatrace);
+		mem->alloc_fstatrace = NULL;
+	}
+	if (mem->freed_fstatrace)
+	{
+		free(mem->freed_fstatrace);
+		mem->freed_fstatrace = NULL;
 	}
 	if (mem)
 	{
@@ -306,22 +350,19 @@ static void					_mem_clear(t_mem **list)
 	_WRALOC_NUM_FREE_ = 0;
 }
 
-/*
-** static void					_mem_remove_by_addr(t_mem **head, void *addr)
-** {
-** 	t_mem 					*tmp;
-**
-** 	tmp = *head;
-** 	while (tmp && tmp->next->addr != addr)
-** 	{
-** 		tmp = tmp->next;
-** 	}
-** 	tmp->next = tmp->next->next;
-** 	tmp = tmp->next;
-** 	tmp->next = NULL;
-** 	_mem_del(tmp);
-** }
-*/
+static void					_mem_remove_by_addr(t_mem **head, void *addr)
+{
+	t_mem 					*tmp;
+	tmp = *head;
+	while (tmp && tmp->next->addr != addr)
+	{
+		tmp = tmp->next;
+	}
+	tmp->next = tmp->next->next;
+	tmp = tmp->next;
+	tmp->next = NULL;
+	_mem_del(tmp);
+}
 
 t_mem						*_mem_get_elem_by_addr(t_mem *head, void *addr)
 {
@@ -355,7 +396,7 @@ static size_t				_mem_get_size(t_mem *head, void *addr)
 	return (0);
 }
 
-static void					_mem_set_status(t_mem **head, void *addr, t_byte status)
+static void					_mem_set_status(t_mem **head, void *addr, _WRAP_t_byte status)
 {
 	t_mem 					*tmp;
 
@@ -370,7 +411,6 @@ static void					_mem_set_status(t_mem **head, void *addr, t_byte status)
 	}
 
 }
-
 
 static size_t				_mem_size(t_mem *list)
 {
@@ -397,19 +437,38 @@ static void					_mem_print(t_mem *head)
 	}
 	while (tmp)
 	{
+		while (tmp && _LEAKS_ONLY_ && tmp->stat == 1)
+		{
+			tmp = tmp->next;
+			if (!tmp)
+			{
+				return ;
+			}
+		}
+		printf("%sADDR <%p> | SIZE %08lu | STATUS %s | ",
+		(tmp->stat == 1) ? (CL_GR) : (CL_RD),tmp->addr, tmp->size, ((tmp->stat == 0) ? "Leaked" : "Freed  "));
 		if (tmp->id < 127)
 		{
-			printf("%sID %4c", ((tmp->stat == 1) ? CL_GR : CL_RD), (t_byte)tmp->id);
+			printf("ID %c ", (_WRAP_t_byte)tmp->id);
 		}
 		else
 		{
-			printf("%sID %04lu", ((tmp->stat == 1) ? CL_GR : CL_RD), tmp->id);
+			printf("ID %04lu", tmp->id);
 		}
-		printf(CR"    ADDR <%p>    SIZE %04lu    STATUS %-20s      "CR"\n",
-		tmp->addr, tmp->size, ((tmp->stat == 0) ? CL_RD"Leaked"CR : CL_GR"Freed"CR));
+		if (tmp->stat == 0)
+		{
+			if (!tmp->alloc_fstatrace)
+			{
+				printf("\n"CL_RD"Wraloc REQUIRES 'addr2line(1)' which is a unix utility to be able to print the call stack"CR"\n");
+			}
+			else
+			{
+				printf(" : \nAllocated at : \n\t%s",tmp->alloc_fstatrace);
+			}
+		}
 		tmp = tmp->next;
+	printf(CR"\n");
 	}
-	printf(CL_BL CR"\n\n");
 }
 
 # ifdef malloc
@@ -420,7 +479,7 @@ static void					_mem_print(t_mem *head)
 #  undef free
 # endif
 
-static inline void			*_mymalloc(size_t size)
+static inline void			*_WRAPPED_malloc(size_t size)
 {
 	void 					*ptr;
 	t_mem					*tmp;
@@ -434,39 +493,58 @@ static inline void			*_mymalloc(size_t size)
 	_mem_append(&_WRALOC_MEM_LIST_, _mem_new(ptr, size, 0));
 	_WRALOC_NUM_ALLO_++;
 	tmp = _mem_get_elem_by_addr(_WRALOC_MEM_LIST_, ptr);
-	printf(CL_GR"+A+ ALLO_NUM %08lu | ADDR <%p> | SIZE %04lu | ",
+	printf(CL_GR"+A+ ALLO_NUM %08lu | ADDR <%p> | SIZE %08lu | ",
 		_WRALOC_NUM_ALLO_, ptr, size);
-	if (tmp->id < 127)
+	if (tmp && tmp->id < 127)
 	{
-		printf("ID %c | ", (t_byte)tmp->id);
+		printf("ID %c", (_WRAP_t_byte)tmp->id);
 	}
-	else
+	else if (tmp)
 	{
-		printf("ID %08lu | ", tmp->id);
+		printf("ID %08lu", tmp->id);
 	}
-	printf(CL_GR"source : %s",tmp->stack_trace);
+	if (tmp && (tmp->alloc_statrace = _get_stack_trace(0)))
+	{
+		printf(CL_GR" : %s",tmp->alloc_statrace);
+	}
+	if (tmp && (tmp->alloc_fstatrace = _get_stack_trace(1)))
+	{
+		if (_FULL_TRACE_)
+		{
+			printf(CR"\nCall Stack : \n\t%s",tmp->alloc_fstatrace);
+		}
+	}
 	printf(CR "\n");
-
 	return (ptr);
 }
 
-static inline void			_myfree(void *ptr)
+static inline void			_WRAPPED_free(void *ptr)
 {
 	t_mem					*tmp;
 	size_t 					id;
 
 	tmp = _mem_get_elem_by_addr(_WRALOC_MEM_LIST_, ptr);
-	printf(CL_RD "-F- FREE_NUM %08lu | ADDR <%p> | SIZE %04lu | ",
+	printf(CL_BL "-F- FREE_NUM %08lu | ADDR <%p> | SIZE %08lu | ",
 		_WRALOC_NUM_FREE_, ptr, _mem_get_size(_WRALOC_MEM_LIST_, ptr));
-	if (tmp->id < 127)
+	if (tmp && tmp->id < 127)
 	{
-		printf("ID %c | ", (t_byte)tmp->id);
+		printf("ID %c | ", (_WRAP_t_byte)tmp->id);
 	}
-	else
+	else if (tmp)
 	{
 		printf("ID %04lu | ", tmp->id);
 	}
-	printf(CL_RD"source : %s",tmp->stack_trace);
+	if (tmp && (tmp->freed_statrace = _get_stack_trace(0)))
+	{
+		printf(" : %s",tmp->freed_statrace);
+	}
+	if (tmp && (tmp->freed_fstatrace = _get_stack_trace(1)))
+	{
+		if (_FULL_TRACE_)
+		{
+			printf(CR"\nCall Stack : \n\t%s",tmp->freed_fstatrace);
+		}
+	}
 	printf(CR "\n");
 	if (ptr)
 	{
@@ -476,15 +554,16 @@ static inline void			_myfree(void *ptr)
 	free(ptr);
 }
 
-# define malloc(x) _mymalloc(x)
-# define free(x) _myfree(x)
+# define malloc(x) _WRAPPED_malloc(x)
+# define free(x) _WRAPPED_free(x)
 
 # endif /* WRAP */
 
 static inline void			_get_summary(void)
 {
+
 # if WRAP == 1
-	if (_WRALOC_NUM_ALLO_ && _WRALOC_NUM_FREE_)
+	if (_WRALOC_NUM_ALLO_ >= 0 && _WRALOC_NUM_FREE_ >= 0)
 	{
 		char *color = CL_RD;
 		if (_WRALOC_NUM_ALLO_ <= _WRALOC_NUM_FREE_)
@@ -510,13 +589,33 @@ static inline void			_get_summary(void)
 # endif
 }
 
-static inline void		__attribute__	((constructor))	ctor()
+#define COLBG "\033[34m"
+#define COLFG "\033[93m"
+
+static inline void		__attribute__	((constructor))	constructor()
 {
 	_WRALOC_NUM_ALLO_ = 0;
 	_WRALOC_NUM_FREE_ = 0;
+# if WRAP == 1
+
+printf(
+""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
+""COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":""\n"
+""COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
+""COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":""\n"
+""COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG" WRALOC V2.3 | https://github.com/lorenuars19/wraloc"COLBG" "COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
+""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
+CR"\n");
+# endif
+
 }
 
-static inline void		__attribute__	((destructor))	dtor()
+static inline void		__attribute__	((destructor))	destructor()
 {
 # if WRAP == 1
 	_get_summary();
