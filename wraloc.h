@@ -557,12 +557,9 @@ static inline void			_WRAPPED_free(void *ptr)
 # define malloc(x) _WRAPPED_malloc(x)
 # define free(x) _WRAPPED_free(x)
 
-# endif /* WRAP */
 
-static inline void			_get_summary(void)
+static inline void			_print_summary(void)
 {
-
-# if WRAP == 1
 	if (_WRALOC_NUM_ALLO_ >= 0 && _WRALOC_NUM_FREE_ >= 0)
 	{
 		char *color = CL_RD;
@@ -583,9 +580,19 @@ static inline void			_get_summary(void)
 		{
 			printf("':::::::::::: ! L E A K S ! ::::::::::::'");
 		}
-		printf(CR"\n");
-		_mem_print(_WRALOC_MEM_LIST_);
+		printf(CR"\n\n");
 	}
+}
+
+# endif /* WRAP */
+
+static inline void			_get_summary(void)
+{
+
+# if WRAP == 1
+	_print_summary();
+	_mem_print(_WRALOC_MEM_LIST_);
+	_print_summary();
 # endif
 }
 
@@ -611,7 +618,7 @@ printf(
 ""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":""\n"
 ""COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
 ""COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":""\n"
-""COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLVR" WRALOC V2.3 | "COLLK"https://github.com/lorenuars19/wraloc"COLBG" "COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
+""COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLVR" WRALOC V2.3   "COLLK"https://github.com/lorenuars19/wraloc"COLBG" "COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
 ""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
 CR"\n");
 # endif
