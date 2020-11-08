@@ -6,6 +6,7 @@
 - Replaces `malloc()` & `free()` using macros
 - Count valid `malloc()` or `exit()` & count non-NULL `free()`
 - Use of GCC's `__attribute__` to execute code before an after the `main()`
+- Printf size of allocation in bytes and location of the call when FREE/ALLOC happen
 
 # Usage
 1. Get
