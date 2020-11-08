@@ -3,7 +3,7 @@
 <img src="wraloc_logo.png">
 
 # W R A L O C
-- Replaces `malloc()` & `free()`
+- Replaces `malloc()` & `free()` using macros
 - Count valid `malloc()` or `exit()` & count non-NULL `free()`
 - Use of GCC's `__attribute__` to execute code before an after the `main()`
 
