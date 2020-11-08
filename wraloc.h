@@ -32,6 +32,7 @@ size_t						_WRALOC_NUM_FREE_;
 
 # define BT_BUF_SIZE 100
 # define BUFSIZE 512
+# define STACK_OFFS 1
 
 typedef unsigned char		_WRAP_t_byte;
 
@@ -223,7 +224,7 @@ char			*_get_stack_trace(int full)
 		free(strings);
 		return (NULL);
 	}
-	for (int j = 1; j < nptrs; j++)
+	for (int j = STACK_OFFS; j < nptrs; j++)
 	{
 		tmp = _trim_addr(strings[j], " ");
 		if (!(cmd = _jointo("/usr/bin/addr2line -p -f -e ", tmp, &cmd)))
