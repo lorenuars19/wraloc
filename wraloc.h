@@ -17,7 +17,7 @@ size_t						_WRALOC_NUM_FREE_;
 #  define _LEAKS_ONLY_ 0
 # endif
 
-# ifdef _STACK_OFFS_
+# ifndef _STACK_OFFS_
 #  define _STACK_OFFS_ 1
 # endif
 
