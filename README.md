@@ -20,3 +20,4 @@
 - On a MacOs system you should be able to get it using `port install binutils` via `MacPorts`
 
 <img src="wraloc_leaking.png">
+<img src="wraloc_ok.png">
