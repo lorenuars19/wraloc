@@ -24,11 +24,11 @@ size_t						_WRALOC_NUM_FREE_;
 # include <stdlib.h>
 # include <stdio.h>
 
-# define CR "\x1b[m"
-# define CL_RD "\x1b[41m"
-# define CL_GR "\x1b[42m"
-# define CL_YE "\x1b[43m"
-# define CL_BL "\x1b[44m"
+# define CR "\x1b[0m"
+# define CL_RD "\x1b[1;31m"
+# define CL_GR "\x1b[1;32m"
+# define CL_YE "\x1b[1;33m"
+# define CL_BL "\x1b[1;34m"
 
 # define BT_BUF_SIZE 100
 # define BUFSIZE 512
@@ -446,7 +446,7 @@ static void					_mem_print(t_mem *head)
 			}
 		}
 		printf("%sADDR <%p> | SIZE %08lu | STATUS %s | ",
-		(tmp->stat == 1) ? (CL_GR) : (CL_RD),tmp->addr, tmp->size, ((tmp->stat == 0) ? "Leaked" : "Freed  "));
+		(tmp->stat == 1) ? (CL_GR) : (CL_RD),tmp->addr, tmp->size, ((tmp->stat == 0) ? "Leaked" : "Freed "));
 		if (tmp->id < 127)
 		{
 			printf("ID %c ", (_WRAP_t_byte)tmp->id);
@@ -463,7 +463,7 @@ static void					_mem_print(t_mem *head)
 			}
 			else
 			{
-				printf(" : \nAllocated at : \n\t%s",tmp->alloc_fstatrace);
+				printf(" : \n"CR"Allocated at : \n\t%s",tmp->alloc_fstatrace);
 			}
 		}
 		tmp = tmp->next;
@@ -571,17 +571,17 @@ static inline void			_get_summary(void)
 			color = CL_GR;
 		}
 		printf("\n%s", color);
-		printf("\t===== Alloc less or equal to Free ? =====");
+		printf(".:::: Alloc less or equal to Free ? ::::.");
 		printf(CR"\n%s", color);
-		printf("\t===== Alloc %08lu  Free %08lu =====", _WRALOC_NUM_ALLO_, _WRALOC_NUM_FREE_);
+		printf("::::: Alloc %08lu  Free %08lu :::::", _WRALOC_NUM_ALLO_, _WRALOC_NUM_FREE_);
 		printf(CR"\n%s", color);
 		if (_WRALOC_NUM_ALLO_ <= _WRALOC_NUM_FREE_)
 		{
-			printf("\t====== O K = O K = O K = O K = O K ======");
+			printf("'::::: O K : O K : O K : O K : O K :::::'");
 		}
 		else
 		{
-			printf("\t============= ! L E A K S ! =============");
+			printf("':::::::::::: ! L E A K S ! ::::::::::::'");
 		}
 		printf(CR"\n");
 		_mem_print(_WRALOC_MEM_LIST_);
@@ -589,8 +589,11 @@ static inline void			_get_summary(void)
 # endif
 }
 
-#define COLBG "\033[34m"
-#define COLFG "\033[93m"
+#define COLBG "\033[0;1;34;40m"
+#define COLFG "\033[0;34;44m"
+#define COLLK "\033[0;4;34;40m"
+#define COLVR "\033[0;1;35;40m"
+
 
 static inline void		__attribute__	((constructor))	constructor()
 {
@@ -608,7 +611,7 @@ printf(
 ""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":""\n"
 ""COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
 ""COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":""\n"
-""COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG" WRALOC V2.3 | https://github.com/lorenuars19/wraloc"COLBG" "COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
+""COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLVR" WRALOC V2.3 | "COLLK"https://github.com/lorenuars19/wraloc"COLBG" "COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
 ""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
 CR"\n");
 # endif
