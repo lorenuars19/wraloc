@@ -1,6 +1,8 @@
 `curl https://raw.githubusercontent.com/lorenuars19/wraloc/master/wraloc.h -o wraloc.h`
 
 <img src="wraloc_logo.png">
+<img src="wraloc_leaking.png">
+<img src="wraloc_ok.png">
 
 # W R A L O C
 - Replaces `malloc()` & `free()` using macros
@@ -26,5 +28,3 @@
 - To be able to print the call stack it depends on a unix utility `addr2line`
 - On a MacOs system you should be able to get it using `port install binutils` via `MacPorts`
 # Screenshots
-<img src="wraloc_leaking.png">
-<img src="wraloc_ok.png">
