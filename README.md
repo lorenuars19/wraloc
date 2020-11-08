@@ -19,4 +19,4 @@
 - To be able to print the call stack it depends on a unix utility `addr2line`
 - On a MacOs system you should be able to get it using `port install binutils` via `MacPorts`
 
-<img src="Wraloc_leaking.png">
+<img src="wraloc_leaking.png">
