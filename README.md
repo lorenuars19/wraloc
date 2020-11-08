@@ -1,5 +1,5 @@
 `curl https://raw.githubusercontent.com/lorenuars19/wraloc/master/wraloc.h -o wraloc.h`
-
+# Screenshots
 <img src="wraloc_logo.png">
 <img src="wraloc_leaking.png">
 <img src="wraloc_ok.png">
@@ -8,7 +8,7 @@
 - Replaces `malloc()` & `free()` using macros
 - Count valid `malloc()` or `exit()` & count non-NULL `free()`
 - Use of GCC's `__attribute__` to execute code before an after the `main()`
-- Printf size of allocation in bytes and location of the call when FREE/ALLOC happen
+- Prints the **size of allocation in bytes** and **location of the call** when `free()` / `malloc()` is called.
 
 # Usage
 1. Get
@@ -27,4 +27,3 @@
 # Dependency
 - To be able to print the call stack it depends on a unix utility `addr2line`
 - On a MacOs system you should be able to get it using `port install binutils` via `MacPorts`
-# Screenshots
