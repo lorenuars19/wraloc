@@ -4,6 +4,7 @@
 # include <stddef.h>
 size_t						_WRALOC_NUM_ALLO_;
 size_t						_WRALOC_NUM_FREE_;
+static char					_PRINTED = 0;
 
 # ifndef WRAP
 #  define WRAP 1
@@ -54,7 +55,7 @@ typedef struct				mem_list
 
 t_mem						*_WRALOC_MEM_LIST_;
 
-size_t			_hasto(char *s, char c)
+static size_t			_hasto(char *s, char c)
 {
 	size_t		to;
 
@@ -70,7 +71,7 @@ size_t			_hasto(char *s, char c)
 	return (0);
 }
 
-char			*_jointo(char *s1, char *s2, char **tofree)
+static char			*_jointo(char *s1, char *s2, char **tofree)
 {
 	char		*a;
 	size_t		sl1;
@@ -97,7 +98,7 @@ char			*_jointo(char *s1, char *s2, char **tofree)
 	return (a);
 }
 
-int				_in_charset(char c, const char *set)
+static int				_in_charset(char c, const char *set)
 {
 	while (set && *set)
 	{
@@ -108,7 +109,7 @@ int				_in_charset(char c, const char *set)
 	return (0);
 }
 
-char			*_trim_addr(const char *s, const char *set)
+static char			*_trim_addr(const char *s, const char *set)
 {
 	char		*new;
 	ssize_t		offset;
@@ -137,7 +138,7 @@ char			*_trim_addr(const char *s, const char *set)
 	return (new);
 }
 
-char			*_trim(const char *s, const char *set, void *tofree)
+static char			*_trim(const char *s, const char *set, void *tofree)
 {
 	char		*new;
 	ssize_t		slen;
@@ -167,7 +168,7 @@ char			*_trim(const char *s, const char *set, void *tofree)
 	return (new);
 }
 
-int				_parse_output(char *cmd, char **new, int full)
+static int				_parse_output(char *cmd, char **new, int full)
 {
 	char		buf[BUFSIZE];
 	FILE		*fp;
@@ -210,7 +211,7 @@ int				_parse_output(char *cmd, char **new, int full)
 	return 0;
 }
 
-char			*_get_stack_trace(int full)
+static char			*_get_stack_trace(int full)
 {
 	int			nptrs = 0;
 	int			ret = 0;
@@ -368,7 +369,7 @@ static void					_mem_remove_by_addr(t_mem **head, void *addr)
 	_mem_del(tmp);
 }
 
-t_mem						*_mem_get_elem_by_addr(t_mem *head, void *addr)
+static t_mem						*_mem_get_elem_by_addr(t_mem *head, void *addr)
 {
 	t_mem 					*tmp;
 
@@ -436,7 +437,7 @@ static void					_mem_print(t_mem *head)
 	tmp = head;
 	if (!tmp)
 	{
-		printf("\n"CL_RD"_WRALOC_MEM_LIST_NULL_"CR);
+		// printf("\n"CL_RD"_WRALOC_MEM_LIST_NULL_"CR);
 		return;
 	}
 	while (tmp)
@@ -532,11 +533,11 @@ static inline void			_WRAPPED_free(void *ptr)
 		_WRALOC_NUM_FREE_, ptr, _mem_get_size(_WRALOC_MEM_LIST_, ptr));
 	if (tmp && tmp->id < 127)
 	{
-		printf("ID %c | ", (_WRAP_t_byte)tmp->id);
+		printf("ID %c", (_WRAP_t_byte)tmp->id);
 	}
 	else if (tmp)
 	{
-		printf("ID %04lu | ", tmp->id);
+		printf("ID %04lu", tmp->id);
 	}
 	if (tmp && (tmp->freed_statrace = _get_stack_trace(0)))
 	{
@@ -564,7 +565,7 @@ static inline void			_WRAPPED_free(void *ptr)
 
 static inline void			_print_summary(void)
 {
-	if (_WRALOC_NUM_ALLO_ >= 0 && _WRALOC_NUM_FREE_ >= 0)
+	if (_WRALOC_NUM_ALLO_ >= 0 && _WRALOC_NUM_FREE_ >= 0 && _WRALOC_MEM_LIST_)
 	{
 		char *color = CL_RD;
 		if (_WRALOC_NUM_ALLO_ <= _WRALOC_NUM_FREE_)
@@ -610,8 +611,10 @@ static inline void		__attribute__	((constructor))	constructor()
 {
 	_WRALOC_NUM_ALLO_ = 0;
 	_WRALOC_NUM_FREE_ = 0;
-# if WRAP == 1
+	_PRINTED = 0;
 
+# if WRAP == 1
+#  if 0
 printf(
 ""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
 ""COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
@@ -625,6 +628,7 @@ printf(
 ""COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLVR" WRALOC V2.3   "COLLK"https://github.com/lorenuars19/wraloc"COLBG" "COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
 ""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
 CR"\n");
+#  endif
 # endif
 
 }
@@ -632,7 +636,11 @@ CR"\n");
 static inline void		__attribute__	((destructor))	destructor()
 {
 # if WRAP == 1
-	_get_summary();
+	if (!_PRINTED)
+	{
+		_PRINTED = 1;
+		_get_summary();
+	}
 	_mem_clear(&_WRALOC_MEM_LIST_);
 # endif
 }
