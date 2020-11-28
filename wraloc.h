@@ -19,15 +19,18 @@ static char					_PRINTED = 0;
 # endif
 
 # ifndef _STACK_OFFS_
-#  define _STACK_OFFS_ 1
+#  define _STACK_OFFS_ 2
 # endif
 
 # if WRAP == 1
 
 # include <execinfo.h>
+# include <errno.h>
 # include <string.h>
 # include <stdlib.h>
+# include <stdarg.h>
 # include <stdio.h>
+# include <unistd.h>
 
 # define CR "\x1b[0m"
 # define CL_RD "\x1b[1;31m"
@@ -55,7 +58,7 @@ typedef struct				mem_list
 
 t_mem						*_WRALOC_MEM_LIST_;
 
-static size_t			_hasto(char *s, char c)
+static size_t			_str_hasto(char *s, char c)
 {
 	size_t		to;
 
@@ -71,7 +74,7 @@ static size_t			_hasto(char *s, char c)
 	return (0);
 }
 
-static char			*_jointo(char *s1, char *s2, char **tofree)
+static char			*_str_jointo(char *s1, char *s2, char **tofree)
 {
 	char		*a;
 	size_t		sl1;
@@ -79,8 +82,8 @@ static char			*_jointo(char *s1, char *s2, char **tofree)
 	size_t		i;
 
 	a = NULL;
-	sl1 = _hasto(s1, '\0');
-	sl2 = _hasto(s2, '\0');
+	sl1 = _str_hasto(s1, '\0');
+	sl2 = _str_hasto(s2, '\0');
 	if (!(a = (char *)malloc((sl1 + sl2 + 1) * sizeof(char))))
 	{
 		if (tofree != NULL && *tofree != NULL)
@@ -176,18 +179,21 @@ static int				_parse_output(char *cmd, char **new, int full)
 
 	if ((fp = popen(cmd, "r")) == NULL)
 	{
+		fprintf(stderr, "\n\nERROR\n%s\n\n", strerror(errno));
+		exit(errno);
 		return (1);
 	}
+	fprintf(stderr, "FD opened %d\n", fileno(fp));
 	while (fgets(buf, BUFSIZE, fp) != NULL)
 	{
-		if (_hasto(buf, '?'))
+		if (_str_hasto(buf, '?'))
 		{
 			return (2);
 		}
 		if (!full)
 		{
 			trimmed = _trim(buf, " ", trimmed);
-			if (!(*new = _jointo(*new, trimmed, new)))
+			if (!(*new = _str_jointo(*new, trimmed, new)))
 			{
 				free(trimmed);
 				trimmed = NULL;
@@ -198,16 +204,20 @@ static int				_parse_output(char *cmd, char **new, int full)
 		}
 		else
 		{
-			if (!(*new = _jointo(*new, buf, new)))
+			if (!(*new = _str_jointo(*new, buf, new)))
 			{
 				return (1);
 			}
 		}
 	}
-	if(pclose(fp))
+	usleep(2000);
+	if(pclose(fp) == -1)
 	{
+		fprintf(stderr, "WRALOC ERROR %d > %s\n", errno, strerror(errno));
 		return (1);
 	}
+close(fileno(fp));
+
 	return 0;
 }
 
@@ -220,7 +230,7 @@ static char			*_get_stack_trace(int full)
 	char		*tmp = NULL;
 	char		*cmd = NULL;
 	char		*stack_trace = NULL;
-
+return ("NoPe");
 	nptrs = backtrace(buffer, BT_BUF_SIZE);
 	strings = backtrace_symbols(buffer, nptrs);
 	if (strings == NULL)
@@ -231,11 +241,11 @@ static char			*_get_stack_trace(int full)
 	for (int j = _STACK_OFFS_; j < nptrs; j++)
 	{
 		tmp = _trim_addr(strings[j], " ");
-		if (!(cmd = _jointo("/usr/bin/addr2line -p -f -e ", tmp, &cmd)))
+		if (!(cmd = _str_jointo("/usr/bin/addr2line -p -f -e ", tmp, &cmd)))
 		{
 			return (NULL);
 		}
-		if (!(cmd = _jointo(cmd, " 2>&1 ", &cmd)))
+		if (!(cmd = _str_jointo(cmd, " 2>&1 ", &cmd)))
 		{
 			return (NULL);
 		}
@@ -248,14 +258,14 @@ static char			*_get_stack_trace(int full)
 		{
 			if (!full)
 			{
-				if (!(stack_trace = _jointo(stack_trace, ((j > nptrs - 4) ? ("") : (" < ")), &stack_trace)))
+				if (!(stack_trace = _str_jointo(stack_trace, ((j > nptrs - 4) ? ("") : (" < ")), &stack_trace)))
 				{
 					return (NULL);
 				}
 			}
 			else
 			{
-				if (!(stack_trace = _jointo(stack_trace, "\t", &stack_trace)))
+				if (!(stack_trace = _str_jointo(stack_trace, "\t", &stack_trace)))
 				{
 					return (NULL);
 				}
@@ -276,7 +286,10 @@ static t_mem 				*_mem_new(void *addr, size_t size, _WRAP_t_byte stat)
 	t_mem 					*head;
 
 	if (!(head = (t_mem *)malloc(sizeof(t_mem))))
+	{
+		printf("\n\n\n\n\nWRALOC ERROR : %d > %s\n\n\n\n\n", errno, strerror(errno));
 		return (NULL);
+	}
 	head->id = id++;
 	head->addr = addr;
 	head->size = size;
@@ -450,7 +463,7 @@ static void					_mem_print(t_mem *head)
 				return ;
 			}
 		}
-		printf("%sADDR <%p> | SIZE %08lu | STATUS %s | ",
+		printf("%sADDR <%p> | SIZE %04lu | STATUS %s | ",
 		(tmp->stat == 1) ? (CL_GR) : (CL_RD),tmp->addr, tmp->size, ((tmp->stat == 0) ? "Leaked" : "Freed "));
 		if (tmp->id < 127)
 		{
@@ -460,20 +473,44 @@ static void					_mem_print(t_mem *head)
 		{
 			printf("ID %04lu", tmp->id);
 		}
-		if (tmp->stat == 0)
+		if (tmp->alloc_statrace)
 		{
-			if (!tmp->alloc_fstatrace)
-			{
-				printf("\n"CL_RD"Wraloc REQUIRES 'addr2line(1)' which is a unix utility to be able to print the call stack"CR"\n");
-			}
-			else
-			{
-				printf(" : \n"CR"Allocated at : \n\t%s",tmp->alloc_fstatrace);
-			}
+			printf(" : A %s ",tmp->alloc_statrace);
+		}
+		if (tmp->freed_statrace)
+		{
+			printf("\033[35m F %s", tmp->freed_statrace);
 		}
 		tmp = tmp->next;
 	printf(CR"\n");
 	}
+}
+
+static int	vasprintf(char **strp, const char *fmt, va_list ap)
+{
+	va_list ap1;
+	size_t size;
+	char *buffer;
+
+	va_copy(ap1, ap);
+	size = vsnprintf(NULL, 0, fmt, ap1) + 1;
+	va_end(ap1);
+	buffer = calloc(1, size);
+	if (!buffer)
+		return (-1);
+	*strp = buffer;
+	return vsnprintf(buffer, size, fmt, ap);
+}
+
+static int	asprintf(char **strp, const char *fmt, ...)
+{
+	int error;
+	va_list ap;
+
+	va_start(ap, fmt);
+	error = vasprintf(strp, fmt, ap);
+	va_end(ap);
+	return error;
 }
 
 # ifdef malloc
@@ -484,7 +521,7 @@ static void					_mem_print(t_mem *head)
 #  undef free
 # endif
 
-static inline void			*_WRAPPED_malloc(size_t size)
+static inline void			*_WRAPPED_malloc(size_t size, int line, const char *func, const char *file)
 {
 	void 					*ptr;
 	t_mem					*tmp;
@@ -498,39 +535,8 @@ static inline void			*_WRAPPED_malloc(size_t size)
 	_mem_append(&_WRALOC_MEM_LIST_, _mem_new(ptr, size, 0));
 	_WRALOC_NUM_ALLO_++;
 	tmp = _mem_get_elem_by_addr(_WRALOC_MEM_LIST_, ptr);
-	printf(CL_GR"+A+ ALLO_NUM %08lu | ADDR <%p> | SIZE %08lu | ",
+	printf(CL_GR"+A+ ALLO_NUM %04lu | ADDR <%p> | SIZE %04lu | ",
 		_WRALOC_NUM_ALLO_, ptr, size);
-	if (tmp && tmp->id < 127)
-	{
-		printf("ID %c", (_WRAP_t_byte)tmp->id);
-	}
-	else if (tmp)
-	{
-		printf("ID %08lu", tmp->id);
-	}
-	if (tmp && (tmp->alloc_statrace = _get_stack_trace(0)))
-	{
-		printf(CL_GR" : %s",tmp->alloc_statrace);
-	}
-	if (tmp && (tmp->alloc_fstatrace = _get_stack_trace(1)))
-	{
-		if (_FULL_TRACE_)
-		{
-			printf(CR"\nCall Stack : \n\t%s",tmp->alloc_fstatrace);
-		}
-	}
-	printf(CR "\n");
-	return (ptr);
-}
-
-static inline void			_WRAPPED_free(void *ptr)
-{
-	t_mem					*tmp;
-	size_t 					id;
-
-	tmp = _mem_get_elem_by_addr(_WRALOC_MEM_LIST_, ptr);
-	printf(CL_BL "-F- FREE_NUM %08lu | ADDR <%p> | SIZE %08lu | ",
-		_WRALOC_NUM_FREE_, ptr, _mem_get_size(_WRALOC_MEM_LIST_, ptr));
 	if (tmp && tmp->id < 127)
 	{
 		printf("ID %c", (_WRAP_t_byte)tmp->id);
@@ -539,28 +545,93 @@ static inline void			_WRAPPED_free(void *ptr)
 	{
 		printf("ID %04lu", tmp->id);
 	}
-	if (tmp && (tmp->freed_statrace = _get_stack_trace(0)))
+	if (tmp)
+	{
+		if (asprintf(&(tmp->alloc_statrace), "(%s) %s:%d", func, file, line) < 0)
+		{
+			free(tmp->alloc_statrace);
+			tmp->alloc_statrace = NULL;
+		}
+	}
+	printf(" : %s",tmp->alloc_statrace);
+	// if (tmp && (tmp->alloc_statrace = _get_stack_trace(0)))
+	// {
+	// 	printf(CL_GR" : %s",tmp->alloc_statrace);
+	// }
+	// if (tmp && (tmp->alloc_fstatrace = _get_stack_trace(1)))
+	// {
+	// 	if (_FULL_TRACE_)
+	// 	{
+	// 		printf(CR"\nCall Stack : \n\t%s",tmp->alloc_fstatrace);
+	// 	}
+	// }
+	printf(CR "\n");
+	return (ptr);
+}
+
+static inline void			_WRAPPED_free(void *ptr, int line, const char *func, const char *file)
+{
+	t_mem					*tmp;
+	size_t 					id;
+	size_t					size;
+
+	tmp = _mem_get_elem_by_addr(_WRALOC_MEM_LIST_, ptr);
+	size = _mem_get_size(_WRALOC_MEM_LIST_, ptr);
+
+	if (size)
+	{
+		printf(CL_BL "-F- FREE_NUM %04lu | ADDR <%p> | SIZE %04lu | ", _WRALOC_NUM_FREE_, ptr, size);
+	}
+	else
+	{
+		// printf("\033[96mFREE OF SIZE ZERO");
+	}
+	if (size && tmp && tmp->id < 127)
+	{
+		printf("ID %c", (_WRAP_t_byte)tmp->id);
+	}
+	else if (size && tmp)
+	{
+		printf("ID %04lu", tmp->id);
+	}
+	if (size && tmp)
+	{
+		if (asprintf(&(tmp->freed_statrace), "(%s) %s:%d", func, file, line) < 0)
+		{
+			free(tmp->freed_statrace);
+			tmp->freed_statrace = NULL;
+		}
+	}
+	if (size && tmp && tmp->freed_statrace)
 	{
 		printf(" : %s",tmp->freed_statrace);
 	}
-	if (tmp && (tmp->freed_fstatrace = _get_stack_trace(1)))
+	else if (size)
 	{
-		if (_FULL_TRACE_)
-		{
-			printf(CR"\nCall Stack : \n\t%s",tmp->freed_fstatrace);
-		}
+		printf("(%s) %s:%d", func, file, line);
 	}
-	printf(CR "\n");
-	if (ptr)
+	// if (tmp && (tmp->freed_statrace = _get_stack_trace(0)))
+	// {
+	// 	printf(" : %s",tmp->freed_statrace);
+	// }
+	// if (tmp && (tmp->freed_fstatrace = _get_stack_trace(1)))
+	// {
+	// 	if (_FULL_TRACE_)
+	// 	{
+	// 		printf(CR"\nCall Stack : \n\t%s",tmp->freed_fstatrace);
+	// 	}
+	// }
+	if (size)
 	{
 		_WRALOC_NUM_FREE_++;
+	printf(CR "\n");
 	}
 	_mem_set_status(&_WRALOC_MEM_LIST_, ptr, 1);
 	free(ptr);
 }
 
-# define malloc(x) _WRAPPED_malloc(x)
-# define free(x) _WRAPPED_free(x)
+# define malloc(x) _WRAPPED_malloc(x, __LINE__, __FUNCTION__, __FILE__)
+# define free(x) _WRAPPED_free(x,  __LINE__, __FUNCTION__, __FILE__)
 
 
 static inline void			_print_summary(void)
@@ -606,15 +677,14 @@ static inline void			_get_summary(void)
 #define COLLK "\033[0;4;34;40m"
 #define COLVR "\033[0;1;35;40m"
 
-
-static inline void		__attribute__	((constructor))	constructor()
+static inline void	constructor() __attribute__ ((constructor));
+static inline void	destructor() __attribute__ ((destructor));
+static inline void	constructor()
 {
 	_WRALOC_NUM_ALLO_ = 0;
 	_WRALOC_NUM_FREE_ = 0;
 	_PRINTED = 0;
-
-# if WRAP == 1
-#  if 0
+# if 0
 printf(
 ""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
 ""COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
@@ -628,12 +698,11 @@ printf(
 ""COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLVR" WRALOC V2.3   "COLLK"https://github.com/lorenuars19/wraloc"COLBG" "COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
 ""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
 CR"\n");
-#  endif
 # endif
 
 }
 
-static inline void		__attribute__	((destructor))	destructor()
+static inline void	destructor()
 {
 # if WRAP == 1
 	if (!_PRINTED)
