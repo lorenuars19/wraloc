@@ -486,6 +486,7 @@ static void					_mem_print(t_mem *head)
 	}
 }
 
+#  ifndef __APPLE__
 static int	vasprintf(char **strp, const char *fmt, va_list ap)
 {
 	va_list ap1;
@@ -512,6 +513,7 @@ static int	asprintf(char **strp, const char *fmt, ...)
 	va_end(ap);
 	return error;
 }
+#  endif
 
 # ifdef malloc
 #  undef malloc
