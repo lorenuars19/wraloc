@@ -2,9 +2,11 @@
 # define WRALOC_H
 
 # include <stddef.h>
+
 size_t						_WRALOC_NUM_ALLO_;
 size_t						_WRALOC_NUM_FREE_;
-static char					_PRINTED = 0;
+char						_PRINTED;
+
 
 # ifndef WRAP
 #  define WRAP 1
@@ -38,6 +40,11 @@ static char					_PRINTED = 0;
 # define CL_YE "\x1b[1;33m"
 # define CL_BL "\x1b[1;34m"
 
+#define COLBG "\033[0;1;34;40m"
+#define COLFG "\033[0;34;44m"
+#define COLLK "\033[0;4;34;40m"
+#define COLVR "\033[0;1;35;40m"
+
 # define BT_BUF_SIZE 100
 # define BUFSIZE 512
 
@@ -48,7 +55,7 @@ typedef struct				mem_list
 	size_t					id;
 	void					*addr;
 	size_t					size;
-	_WRAP_t_byte					stat;
+	_WRAP_t_byte			stat;
 	char					*alloc_statrace;
 	char					*freed_statrace;
 	char					*alloc_fstatrace;
@@ -58,7 +65,7 @@ typedef struct				mem_list
 
 t_mem						*_WRALOC_MEM_LIST_;
 
-static size_t			_str_hasto(char *s, char c)
+static inline inline size_t			_str_hasto(char *s, char c)
 {
 	size_t		to;
 
@@ -74,7 +81,7 @@ static size_t			_str_hasto(char *s, char c)
 	return (0);
 }
 
-static char			*_str_jointo(char *s1, char *s2, char **tofree)
+static inline char			*_str_jointo(char *s1, char *s2, char **tofree)
 {
 	char		*a;
 	size_t		sl1;
@@ -101,7 +108,7 @@ static char			*_str_jointo(char *s1, char *s2, char **tofree)
 	return (a);
 }
 
-static int				_in_charset(char c, const char *set)
+static inline int				_in_charset(char c, const char *set)
 {
 	while (set && *set)
 	{
@@ -112,10 +119,9 @@ static int				_in_charset(char c, const char *set)
 	return (0);
 }
 
-static char			*_trim_addr(const char *s, const char *set)
+static inline char			*_trim_addr(const char *s, const char *set)
 {
 	char		*new;
-	ssize_t		offset;
 	ssize_t		len_cpy;
 	ssize_t		i;
 
@@ -141,7 +147,7 @@ static char			*_trim_addr(const char *s, const char *set)
 	return (new);
 }
 
-static char			*_trim(const char *s, const char *set, void *tofree)
+static inline char			*_trim(const char *s, const char *set, void *tofree)
 {
 	char		*new;
 	ssize_t		slen;
@@ -171,7 +177,7 @@ static char			*_trim(const char *s, const char *set, void *tofree)
 	return (new);
 }
 
-static int				_parse_output(char *cmd, char **new, int full)
+static inline int				_parse_output(char *cmd, char **new, int full)
 {
 	char		buf[BUFSIZE];
 	FILE		*fp;
@@ -221,7 +227,7 @@ close(fileno(fp));
 	return 0;
 }
 
-static char			*_get_stack_trace(int full)
+static inline char			*_get_stack_trace(int full)
 {
 	int			nptrs = 0;
 	int			ret = 0;
@@ -280,7 +286,7 @@ return ("NoPe");
 	return (stack_trace);
 }
 
-static t_mem 				*_mem_new(void *addr, size_t size, _WRAP_t_byte stat)
+static inline t_mem 				*_mem_new(void *addr, size_t size, _WRAP_t_byte stat)
 {
 	static size_t 			id = 'A';
 	t_mem 					*head;
@@ -302,7 +308,7 @@ static t_mem 				*_mem_new(void *addr, size_t size, _WRAP_t_byte stat)
 	return (head);
 }
 
-static t_mem				*_mem_append(t_mem **head, t_mem *new)
+static inline t_mem				*_mem_append(t_mem **head, t_mem *new)
 {
 	t_mem 					*tmp;
 
@@ -325,7 +331,7 @@ static t_mem				*_mem_append(t_mem **head, t_mem *new)
 	return (new);
 }
 
-static void					_mem_del(t_mem *mem)
+static inline void					_mem_del(t_mem *mem)
 {
 	if (mem->alloc_statrace)
 	{
@@ -354,7 +360,7 @@ static void					_mem_del(t_mem *mem)
 	}
 }
 
-static void					_mem_clear(t_mem **list)
+static inline void					_mem_clear(t_mem **list)
 {
 	t_mem					*tmp;
 
@@ -368,7 +374,7 @@ static void					_mem_clear(t_mem **list)
 	_WRALOC_NUM_FREE_ = 0;
 }
 
-static void					_mem_remove_by_addr(t_mem **head, void *addr)
+static inline void					_mem_remove_by_addr(t_mem **head, void *addr)
 {
 	t_mem 					*tmp;
 	tmp = *head;
@@ -382,7 +388,7 @@ static void					_mem_remove_by_addr(t_mem **head, void *addr)
 	_mem_del(tmp);
 }
 
-static t_mem						*_mem_get_elem_by_addr(t_mem *head, void *addr)
+static inline t_mem						*_mem_get_elem_by_addr(t_mem *head, void *addr)
 {
 	t_mem 					*tmp;
 
@@ -398,7 +404,7 @@ static t_mem						*_mem_get_elem_by_addr(t_mem *head, void *addr)
 	return (0);
 }
 
-static size_t				_mem_get_size(t_mem *head, void *addr)
+static inline size_t				_mem_get_size(t_mem *head, void *addr)
 {
 	t_mem 					*tmp;
 
@@ -414,7 +420,7 @@ static size_t				_mem_get_size(t_mem *head, void *addr)
 	return (0);
 }
 
-static void					_mem_set_status(t_mem **head, void *addr, _WRAP_t_byte status)
+static inline void					_mem_set_status(t_mem **head, void *addr, _WRAP_t_byte status)
 {
 	t_mem 					*tmp;
 
@@ -430,7 +436,7 @@ static void					_mem_set_status(t_mem **head, void *addr, _WRAP_t_byte status)
 
 }
 
-static size_t				_mem_size(t_mem *list)
+static inline size_t				_mem_size(t_mem *list)
 {
 	size_t	size;
 
@@ -443,7 +449,7 @@ static size_t				_mem_size(t_mem *list)
 	return (size);
 }
 
-static void					_mem_print(t_mem *head)
+static inline void					_mem_print(t_mem *head)
 {
 	t_mem *tmp;
 
@@ -487,7 +493,7 @@ static void					_mem_print(t_mem *head)
 }
 
 #  ifndef __APPLE__
-static int	vasprintf(char **strp, const char *fmt, va_list ap)
+static inline int	vasprintf(char **strp, const char *fmt, va_list ap)
 {
 	va_list ap1;
 	size_t size;
@@ -503,7 +509,7 @@ static int	vasprintf(char **strp, const char *fmt, va_list ap)
 	return vsnprintf(buffer, size, fmt, ap);
 }
 
-static int	asprintf(char **strp, const char *fmt, ...)
+static inline int	asprintf(char **strp, const char *fmt, ...)
 {
 	int error;
 	va_list ap;
@@ -523,11 +529,10 @@ static int	asprintf(char **strp, const char *fmt, ...)
 #  undef free
 # endif
 
-static inline void			*_WRAPPED_malloc(size_t size, int line, const char *func, const char *file)
+static inline inline void			*_WRAPPED_malloc(size_t size, int line, const char *func, const char *file)
 {
 	void 					*ptr;
 	t_mem					*tmp;
-	size_t 					id;
 
 	if (!(ptr = malloc(size)))
 	{
@@ -574,13 +579,12 @@ static inline void			*_WRAPPED_malloc(size_t size, int line, const char *func, c
 static inline void			_WRAPPED_free(void *ptr, int line, const char *func, const char *file)
 {
 	t_mem					*tmp;
-	size_t 					id;
 	size_t					size;
 
 	tmp = _mem_get_elem_by_addr(_WRALOC_MEM_LIST_, ptr);
 	size = _mem_get_size(_WRALOC_MEM_LIST_, ptr);
 
-	if (size)
+	if (ptr)
 	{
 		printf(CL_BL "-F- FREE_NUM %04lu | ADDR <%p> | SIZE %04lu | ", _WRALOC_NUM_FREE_, ptr, size);
 	}
@@ -623,7 +627,7 @@ static inline void			_WRAPPED_free(void *ptr, int line, const char *func, const 
 	// 		printf(CR"\nCall Stack : \n\t%s",tmp->freed_fstatrace);
 	// 	}
 	// }
-	if (size)
+	if (ptr)
 	{
 		_WRALOC_NUM_FREE_++;
 	printf(CR "\n");
@@ -633,12 +637,27 @@ static inline void			_WRAPPED_free(void *ptr, int line, const char *func, const 
 }
 
 # define malloc(x) _WRAPPED_malloc(x, __LINE__, __FUNCTION__, __FILE__)
-# define free(x) _WRAPPED_free(x,  __LINE__, __FUNCTION__, __FILE__)
+# define free(x) _WRAPPED_free(x, __LINE__, __FUNCTION__, __FILE__)
 
-
-static inline void			_print_summary(void)
+static inline void					_print_header(void)
 {
-	if (_WRALOC_NUM_ALLO_ >= 0 && _WRALOC_NUM_FREE_ >= 0 && _WRALOC_MEM_LIST_)
+printf(""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
+""COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
+""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":""\n"
+""COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
+""COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":""\n"
+""COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLVR" WRALOC V2.6   "COLLK"https://github.com/lorenuars19/wraloc"COLBG" "COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
+""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
+CR"\n");
+}
+
+static inline void			_print_summary(int header)
+{
+	if (_WRALOC_MEM_LIST_)
 	{
 		char *color = CL_RD;
 		if (_WRALOC_NUM_ALLO_ <= _WRALOC_NUM_FREE_)
@@ -648,7 +667,7 @@ static inline void			_print_summary(void)
 		printf("\n%s", color);
 		printf(".:::: Alloc less or equal to Free ? ::::.");
 		printf(CR"\n%s", color);
-		printf("::::: Alloc %08lu  Free %08lu :::::", _WRALOC_NUM_ALLO_, _WRALOC_NUM_FREE_);
+		printf("::::: Alloc %08lu | Free %08lu :::::", _WRALOC_NUM_ALLO_, _WRALOC_NUM_FREE_);
 		printf(CR"\n%s", color);
 		if (_WRALOC_NUM_ALLO_ <= _WRALOC_NUM_FREE_)
 		{
@@ -659,6 +678,10 @@ static inline void			_print_summary(void)
 			printf("':::::::::::: ! L E A K S ! ::::::::::::'");
 		}
 		printf(CR"\n\n");
+		if (header)
+		{
+			_print_header();
+		}
 	}
 }
 
@@ -668,38 +691,25 @@ static inline void			_get_summary(void)
 {
 
 # if WRAP == 1
-	_print_summary();
+	_print_summary(1);
 	_mem_print(_WRALOC_MEM_LIST_);
-	_print_summary();
+	_print_summary(0);
 # endif
 }
 
-#define COLBG "\033[0;1;34;40m"
-#define COLFG "\033[0;34;44m"
-#define COLLK "\033[0;4;34;40m"
-#define COLVR "\033[0;1;35;40m"
+
 
 static inline void	constructor() __attribute__ ((constructor));
 static inline void	destructor() __attribute__ ((destructor));
+
 static inline void	constructor()
 {
 	_WRALOC_NUM_ALLO_ = 0;
 	_WRALOC_NUM_FREE_ = 0;
 	_PRINTED = 0;
+
 # if 0
-printf(
-""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
-""COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
-""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":""\n"
-""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":""\n"
-""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
-""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
-""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":""\n"
-""COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG"."COLBG" "COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
-""COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":"COLBG":"COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG"."COLBG":"COLBG":"COLBG":""\n"
-""COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" "COLVR" WRALOC V2.3   "COLLK"https://github.com/lorenuars19/wraloc"COLBG" "COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":""\n"
-""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
-CR"\n");
+
 # endif
 
 }
