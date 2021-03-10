@@ -422,9 +422,7 @@ puts(CL_RD "\n\n"
 "|             yMM     MMm`            |" "\n"
 "|             `sNMMMMMNy.             |" "\n"
 "|                `....                |" "\n"
-" ------------------------------------- " "\n"
-
-CR"\n");
+" ------------------------------------- " CR "\n");
 }
 
 static inline void			_print_summary(int header)
@@ -444,6 +442,7 @@ static inline void			_print_summary(int header)
 		if (_WRALOC_NUM_ALLO_ <= _WRALOC_NUM_FREE_)
 		{
 			printf("'::::: O K : O K : O K : O K : O K :::::'");
+			printf(CR"\n\n");
 		}
 		else
 		{
@@ -453,11 +452,11 @@ static inline void			_print_summary(int header)
 				_print_LEAKS_ART();
 			}
 		}
-		printf(CR"\n\n");
 		if (header)
 		{
 			_print_header();
 		}
+		printf(CR);
 	}
 }
 
