@@ -42,7 +42,7 @@ void		tab_free(char **tab)
 
 void		f3(char ***tab)
 {
-	*tab = tab_alloc(5, 5);
+	*tab = tab_alloc(3, 3);
 }
 
 void		f2(char ***tab)
@@ -61,5 +61,6 @@ int			main(void)
 
 	f1(&tab);
 	tab_free(tab);
+	free(NULL);
 	return (0);
 }
