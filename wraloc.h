@@ -403,7 +403,7 @@ CR"\n");
 
 static inline void					_print_LEAKS_ART(void)
 {
-puts(CL_RD
+puts(CL_RD "\n\n"
 " ------------------------------------- " "\n"
 "| ............`    `................. |" "\n"
 "| MMMMMMMMMMMMMd:  `+mMMMMMMMMMMMMMMM |" "\n"
