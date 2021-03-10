@@ -448,15 +448,15 @@ static inline void			_print_summary(int header)
 		else
 		{
 			printf("':::::::::::: ! L E A K S ! ::::::::::::'");
+			if (!header)
+			{
+				_print_LEAKS_ART();
+			}
 		}
 		printf(CR"\n\n");
 		if (header)
 		{
 			_print_header();
-		}
-		else
-		{
-			_print_LEAKS_ART();
 		}
 	}
 }
