@@ -446,7 +446,7 @@ static inline void			_print_summary(int header)
 		}
 		else
 		{
-			printf("':::::::::::: ! L E A K S ! ::::::::::::'");
+			printf("':::::::::::: ! L E A K S ! ::::::::::::'\n\n");
 			if (!header)
 			{
 				_print_LEAKS_ART();
