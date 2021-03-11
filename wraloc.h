@@ -347,7 +347,7 @@ static inline void			_WRAPPED_free(void *ptr, int line, const char *func, const 
 	}
 	else
 	{
-		printf(CL_CY "-F- =-=-=-= ADDR <%p> ZERO SIZE FREE NULL POINTER =-=-=-=", ptr, size);
+		printf(CL_CY "-F- =-=-=-= ADDR <%p> ZERO SIZE FREE NULL POINTER =-=-=-=", ptr); // wraloc.h:43:16: error: too many arguments for format [-Werror=format-extra-args]
 	}
 	if (size && tmp && tmp->id < 127)
 	{
