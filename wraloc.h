@@ -297,7 +297,7 @@ static inline int	asprintf(char **strp, const char *fmt, ...)
 
 # define _FORMAT "[%d]%s:%s()", line, file, func
 
-static inline inline void			*_WRAPPED_malloc(size_t size, int line, const char *func, const char *file)
+static inline void			*_WRAPPED_malloc(size_t size, int line, const char *func, const char *file)
 {
 	void 					*ptr;
 	t_mem					*tmp;
