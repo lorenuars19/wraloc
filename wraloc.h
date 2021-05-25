@@ -33,7 +33,10 @@ char						_PRINTED;
 # include <stdarg.h>
 # include <stdio.h>
 # include <unistd.h>
-# include <malloc.h>
+
+#  ifndef __APPLE__
+#   include <malloc.h>
+#  endif
 
 # define CR "\x1b[0m"
 # define CL_RD "\x1b[1;31m"
