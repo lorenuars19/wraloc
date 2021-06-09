@@ -24,6 +24,10 @@ char						_PRINTED;
 #  define _STACK_OFFS_ 2
 # endif
 
+# ifndef _FD
+#  define _FD 2
+# endif
+
 # if WRAP == 1
 
 # include <execinfo.h>
@@ -75,7 +79,7 @@ static inline t_mem 				*_mem_new(void *addr, size_t size, _WRAP_t_byte stat)
 
 	if (!(head = (t_mem *)malloc(sizeof(t_mem))))
 	{
-		printf("\n\n\n\n\nWRALOC ERROR : %d > %s\n\n\n\n\n", errno, strerror(errno));
+		dprintf( _FD, "\n\n\n\n\nWRALOC ERROR : %d > %s\n\n\n\n\n", errno, strerror(errno));
 		return (NULL);
 	}
 	head->id = id++;
@@ -238,26 +242,26 @@ static inline void				_mem_print(t_mem *head)
 				return ;
 			}
 		}
-		printf("%sADDR <%p> | SIZE %04lu | STATUS %s | ",
+		dprintf( _FD, "%sADDR <%p> | SIZE %04lu | STATUS %s | ",
 		(tmp->stat == 1) ? (CL_GR) : (CL_RD),tmp->addr, tmp->size, ((tmp->stat == 0) ? "Leaked" : "Freed "));
 		if (tmp->id < 127)
 		{
-			printf("ID %c ", (_WRAP_t_byte)tmp->id);
+			dprintf( _FD, "ID %c ", (_WRAP_t_byte)tmp->id);
 		}
 		else
 		{
-			printf("ID %04lu", tmp->id);
+			dprintf( _FD, "ID %04lu", tmp->id);
 		}
 		if (tmp->alloc_statrace)
 		{
-			printf(" : A %s ",tmp->alloc_statrace);
+			dprintf( _FD, " : A %s ",tmp->alloc_statrace);
 		}
 		if (tmp->freed_statrace)
 		{
-			printf("\033[35m F %s", tmp->freed_statrace);
+			dprintf( _FD, "\033[35m F %s", tmp->freed_statrace);
 		}
 		tmp = tmp->next;
-	printf(CR"\n");
+	dprintf( _FD, CR"\n");
 	}
 }
 
@@ -307,21 +311,21 @@ static inline void			*_WRAPPED_malloc(size_t size, int line, const char *func, c
 
 	if (!(ptr = malloc(size)))
 	{
-		printf("\x1b[7;41m!!! !!! !!! !!! ALLOC FAILED !!! !!! !!! !!! \x1b[m\n");
+		dprintf( _FD, "\x1b[7;41m!!! !!! !!! !!! ALLOC FAILED !!! !!! !!! !!! \x1b[m\n");
 		return (NULL);
 	}
 	_mem_append(&_WRALOC_MEM_LIST_, _mem_new(ptr, size, 0));
 	_WRALOC_NUM_ALLO_++;
 	tmp = _mem_get_elem_by_addr(_WRALOC_MEM_LIST_, ptr);
-	printf(CL_GR"+A+ ALLO_NUM %04lu | ADDR <%p> | SIZE %04lu | ",
+	dprintf( _FD, CL_GR"+A+ ALLO_NUM %04lu | ADDR <%p> | SIZE %04lu | ",
 		_WRALOC_NUM_ALLO_, ptr, size);
 	if (tmp && tmp->id < 127)
 	{
-		printf("ID %c", (_WRAP_t_byte)tmp->id);
+		dprintf( _FD, "ID %c", (_WRAP_t_byte)tmp->id);
 	}
 	else if (tmp)
 	{
-		printf("ID %04lu", tmp->id);
+		dprintf( _FD, "ID %04lu", tmp->id);
 	}
 	if (tmp)
 	{
@@ -331,8 +335,8 @@ static inline void			*_WRAPPED_malloc(size_t size, int line, const char *func, c
 			tmp->alloc_statrace = NULL;
 		}
 	}
-	printf(" : %s",tmp->alloc_statrace);
-	printf(CR "\n");
+	dprintf( _FD, " : %s",tmp->alloc_statrace);
+	dprintf( _FD, CR "\n");
 	return (ptr);
 }
 
@@ -346,19 +350,19 @@ static inline void			_WRAPPED_free(void *ptr, int line, const char *func, const 
 
 	if (ptr)
 	{
-		printf(CL_BL "-F- FREE_NUM %04lu | ADDR <%p> | SIZE %04lu | ", _WRALOC_NUM_FREE_, ptr, size);
+		dprintf( _FD, CL_BL "-F- FREE_NUM %04lu | ADDR <%p> | SIZE %04lu | ", _WRALOC_NUM_FREE_, ptr, size);
 	}
 	else
 	{
-		printf(CL_CY "-F- =-=-=-= ADDR <%p> ZERO SIZE FREE NULL POINTER =-=-=-=", ptr);
+		dprintf( _FD, CL_CY "-F- =-=-=-= ADDR <%p> ZERO SIZE FREE NULL POINTER =-=-=-=", ptr);
 	}
 	if (size && tmp && tmp->id < 127)
 	{
-		printf("ID %c", (_WRAP_t_byte)tmp->id);
+		dprintf( _FD, "ID %c", (_WRAP_t_byte)tmp->id);
 	}
 	else if (size && tmp)
 	{
-		printf("ID %04lu", tmp->id);
+		dprintf( _FD, "ID %04lu", tmp->id);
 	}
 	if (ptr && tmp)
 	{
@@ -370,17 +374,17 @@ static inline void			_WRAPPED_free(void *ptr, int line, const char *func, const 
 	}
 	if (tmp && tmp->freed_statrace)
 	{
-		printf(" : %s",tmp->freed_statrace);
+		dprintf( _FD, " : %s",tmp->freed_statrace);
 	}
 	else if (!ptr || !size)
 	{
-		printf(" : " _FORMAT);
+		dprintf( _FD, " : " _FORMAT);
 	}
 	if (ptr)
 	{
 		_WRALOC_NUM_FREE_++;
 	}
-		printf(CR "\n");
+		dprintf( _FD, CR "\n");
 	_mem_set_status(&_WRALOC_MEM_LIST_, ptr, 1);
 	free(ptr);
 }
@@ -390,7 +394,7 @@ static inline void			_WRAPPED_free(void *ptr, int line, const char *func, const 
 
 static inline void					_print_header(void)
 {
-puts(
+dprintf( _FD,
 ""COLBG" "COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG" ""\n"
 ""COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLFG"#"COLBG":"COLBG":""\n"
 ""COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":"COLBG"'"COLFG"#"COLFG"#"COLBG"."COLBG"."COLBG"."COLBG" "COLFG"#"COLFG"#"COLBG":""\n"
@@ -407,26 +411,26 @@ CR "\n");
 
 static inline void					_print_LEAKS_ART(void)
 {
-puts(CL_RD
-" ------------------------------------- " "\n"
-"| ............`    `................. |" "\n"
-"| MMMMMMMMMMMMMd:  `+mMMMMMMMMMMMMMMM |" "\n"
-"| MMMMMMMMMMMMMMMh.  `oMMMMMMMMMMMMMM |" "\n"
-"| MMMMMMMMMMMMMMh-  `+mMMMMMMMMMMMMMM |" "\n"
-"| MMMMMMMMMMMMMy`  `yMMMMMMMMMMMMMMMM |" "\n"
-"| MMMMMMMMMMMMMMh:`  /mMMMMMMMMMMMMMM |" "\n"
-"| yyyyyyyyyyyyyyyy/   `+yyyyyyyyyyyyy |" "\n"
-"|                  -`                 |" "\n"
-"|                `yNy.                |" "\n"
-"|               `hMMMd.               |" "\n"
-"|              `hMMMMMN-              |" "\n"
-"|              hMMMMMMMm`             |" "\n"
-"|             /MM     MMs             |" "\n"
-"|             hM LEAKS MN`            |" "\n"
-"|             yMM     MMm`            |" "\n"
-"|             `sNMMMMMNy.             |" "\n"
-"|                `....                |" "\n"
-" ------------------------------------- " CR "\n");
+dprintf(_FD,
+CL_RD " ------------------------------------- " "\n"
+CL_RD "| ............`    `................. |" "\n"
+CL_RD "| MMMMMMMMMMMMMd:  `+mMMMMMMMMMMMMMMM |" "\n"
+CL_RD "| MMMMMMMMMMMMMMMh.  `oMMMMMMMMMMMMMM |" "\n"
+CL_RD "| MMMMMMMMMMMMMMh-  `+mMMMMMMMMMMMMMM |" "\n"
+CL_RD "| MMMMMMMMMMMMMy`  `yMMMMMMMMMMMMMMMM |" "\n"
+CL_RD "| MMMMMMMMMMMMMMh:`  /mMMMMMMMMMMMMMM |" "\n"
+CL_RD "| yyyyyyyyyyyyyyyy/   `+yyyyyyyyyyyyy |" "\n"
+CL_RD "|                  -`                 |" "\n"
+CL_RD "|                `yNy.                |" "\n"
+CL_RD "|               `hMMMd.               |" "\n"
+CL_RD "|              `hMMMMMN-              |" "\n"
+CL_RD "|              hMMMMMMMm`             |" "\n"
+CL_RD "|             /MM     MMs             |" "\n"
+CL_RD "|             hM LEAKS MN`            |" "\n"
+CL_RD "|             yMM     MMm`            |" "\n"
+CL_RD "|             `sNMMMMMNy.             |" "\n"
+CL_RD "|                `....                |" "\n"
+CL_RD " ------------------------------------- " CR "\n");
 }
 
 static inline void			_print_summary(int header)
@@ -438,18 +442,18 @@ static inline void			_print_summary(int header)
 		{
 			color = CL_GR;
 		}
-		printf("\n%s", color);
-		printf(".::::: Alloc less or equal to Free? :::::.");
-		printf(CR"\n%s", color);
-		printf("::::: Alloc %08lu | Free %08lu :::::", _WRALOC_NUM_ALLO_, _WRALOC_NUM_FREE_);
-		printf(CR"\n%s", color);
+		dprintf( _FD, "\n%s", color);
+		dprintf( _FD, ".::::: Alloc less or equal to Free? :::::.");
+		dprintf( _FD, CR"\n%s", color);
+		dprintf( _FD, "::::: Alloc %08lu | Free %08lu :::::", _WRALOC_NUM_ALLO_, _WRALOC_NUM_FREE_);
+		dprintf( _FD, CR"\n%s", color);
 		if (_WRALOC_NUM_ALLO_ <= _WRALOC_NUM_FREE_)
 		{
-			printf("'::::: O K : O K : O K : O K : O K ::::::'"CR"\n\n");
+			dprintf( _FD, "'::::: O K : O K : O K : O K : O K ::::::'"CR"\n\n");
 		}
 		else
 		{
-			printf("'::::::::::::: ! L E A K S ! ::::::::::::'"CR"\n\n");
+			dprintf( _FD, "'::::::::::::: ! L E A K S ! ::::::::::::'"CR"\n\n");
 			if (!header)
 			{
 				_print_LEAKS_ART();
@@ -459,7 +463,7 @@ static inline void			_print_summary(int header)
 		{
 			_print_header();
 		}
-		printf(CR);
+		dprintf( _FD, CR);
 	}
 }
 
