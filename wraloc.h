@@ -12,16 +12,8 @@ char						_PRINTED;
 #  define WRAP 1
 # endif
 
-# ifndef _FULL_TRACE_
-#  define _FULL_TRACE_ 0
-# endif
-
 # ifndef _LEAKS_ONLY_
 #  define _LEAKS_ONLY_ 0
-# endif
-
-# ifndef _STACK_OFFS_
-#  define _STACK_OFFS_ 2
 # endif
 
 # ifndef _FD
