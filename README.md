@@ -1,4 +1,6 @@
-`curl https://raw.githubusercontent.com/lorenuars19/wraloc/master/wraloc.h -o wraloc.h`
+```
+curl https://raw.githubusercontent.com/lorenuars19/wraloc/master/wraloc.h -o wraloc.h
+```
 # Screenshots
 <img src="wraloc_logo.png">
 <img src="wraloc_demo.png">
