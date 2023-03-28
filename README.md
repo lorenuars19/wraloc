@@ -1,3 +1,8 @@
+# THIS TOOL IS NO LONGER MAINTAINED AND USED LOT OF HEAP MEMORY
+Use EZmem instead which was rebuilt as an attempt to reach near-zero interference using fd and writing data to files instead of using heap memory
+[https://github.com/lorenuars19/EZmem](EZmem)
+<hr>
+
 ```bash
 curl https://raw.githubusercontent.com/lorenuars19/wraloc/master/wraloc.h -o wraloc.h
 ```
